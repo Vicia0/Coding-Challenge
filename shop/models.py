@@ -42,20 +42,20 @@ class ShopCart(models.Model):
     bike = models.ForeignKey(Bikes, on_delete=models.SET_NULL, null=True)
     quantity = models.IntegerField()
 
-    # def __str__(self):
-    #     return self.bike.name
+    def __str__(self):
+        return self.bike.name
 
-    # @property
-    # def price(self):
-    #     return (self.bike.price)
+    @property
+    def price(self):
+        return (self.bike.price)
 
-    # @property
-    # def amount(self):
-    #     return (self.quantity * self.bike.price)
+    @property
+    def amount(self):
+        return (self.quantity * self.bike.price)
 
-    # @property
-    # def varamount(self):
-    #     return (self.quantity * self.variant.price)
+    @property
+    def varamount(self):
+        return (self.quantity * self.variant.price)
 
 
 class ShopCartForm(ModelForm):
@@ -129,3 +129,23 @@ class OrderProduct(models.Model):
 
     def __str__(self):
         return self.bike.title
+
+class Customer(models.Model):
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=15, blank=True)
+    address = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
+class Sale(models.Model):
+    bike = models.ForeignKey(Bikes, on_delete=models.CASCADE)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    sale_date = models.DateTimeField(auto_now_add=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"Sale {self.id} - {self.customer} - {self.bike}"

@@ -8,7 +8,24 @@ from rest_framework import permissions
 from shop.serializers import BikesSerializer
 from django.contrib import messages
 from random import random
+from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework import status
+from .models import Sale, Customer, Bikes
+from .serializers import SaleSerializer, CustomerSerializer
 
+
+class CustomerViewSet(viewsets.ModelViewSet):
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            customer = serializer.save()
+            return Response(CustomerSerializer(customer).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class BikesViewSet(viewsets.ModelViewSet):
     """
@@ -237,3 +254,36 @@ def orderproduct(request):
                'profile': current_user,
                }
     return render(request, 'shop/Order_Form.html', context)
+
+class SaleViewSet(viewsets.ModelViewSet):
+    queryset = Sale.objects.all()
+    serializer_class = SaleSerializer
+
+    def create(self, request, *args, **kwargs):
+        bike_id = request.data.get('bike_id')
+        customer_id = request.data.get('customer_id')
+        quantity = request.data.get('quantity', 1)
+
+        try:
+            bike = Bikes.objects.get(id=bike_id)
+            customer = Customer.objects.get(id=customer_id)
+        except (Bikes.DoesNotExist, Customer.DoesNotExist):
+            return Response({"error": "Bike or Customer not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        total_price = bike.price * int(quantity)
+
+        sale = Sale.objects.create(
+            bike=bike,
+            customer=customer,
+            quantity=quantity,
+            total_price=total_price
+        )
+        
+        serializer = SaleSerializer(sale)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def list_sales(self, request):
+        sales = Sale.objects.all()
+        serializer = SaleSerializer(sales, many=True)
+        return Response(serializer.data)
